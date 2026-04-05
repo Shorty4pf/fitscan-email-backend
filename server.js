@@ -437,3 +437,14 @@ server.on("error", (err) => {
   console.error("[server] Démarrage impossible:", err.message);
   process.exit(1);
 });
+
+function shutdown(signal) {
+  console.log(
+    `[server] Signal ${signal} — arrêt du processus (normal sur Railway lors d’un redéploiement ou d’un redémarrage du service)`
+  );
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 10_000).unref();
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
