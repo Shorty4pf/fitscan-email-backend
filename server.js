@@ -14,7 +14,7 @@ const actionCodeSettings = {
   handleCodeInApp: true,
   iOS: {
     bundleId: "com.fitscanai.labs",
-  },
+  }
 };
 
 /**
