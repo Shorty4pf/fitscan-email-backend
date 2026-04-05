@@ -15,7 +15,6 @@ const actionCodeSettings = {
   iOS: {
     bundleId: "com.fitscanai.labs",
   },
-  linkDomain: "fit-scan-ai.firebaseapp.com",
 };
 
 /**
@@ -347,7 +346,6 @@ app.post("/auth/email-link/send", async (req, res) => {
     console.log("[step 4] BEFORE await generateSignInWithEmailLink", {
       timeoutMs: FIREBASE_LINK_TIMEOUT_MS,
       continueUrl: actionCodeSettings.url,
-      linkDomain: actionCodeSettings.linkDomain,
     });
     try {
       const magicLink = await withTimeout(
