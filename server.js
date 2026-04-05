@@ -33,19 +33,26 @@ function loadEmailTemplate() {
 
 const { buildSignInEmailHtml, buildSignInEmailText } = loadEmailTemplate();
 
-const REQUIRED_ENV = [
-  "RESEND_API_KEY",
-  "FIREBASE_PROJECT_ID",
-  "FIREBASE_CLIENT_EMAIL",
-  "FIREBASE_PRIVATE_KEY",
-];
-
 function validateEnv() {
-  const missing = REQUIRED_ENV.filter(
-    (key) => !process.env[key] || String(process.env[key]).trim() === ""
-  );
-  if (missing.length > 0) {
-    console.error("[config] Variables d'environnement manquantes:", missing.join(", "));
+  if (!process.env.RESEND_API_KEY?.trim()) {
+    console.error("[config] RESEND_API_KEY manquante");
+    process.exit(1);
+  }
+  const hasFirebase =
+    Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64?.trim()) ||
+    Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim()) ||
+    (Boolean(process.env.FIREBASE_PROJECT_ID?.trim()) &&
+      Boolean(process.env.FIREBASE_CLIENT_EMAIL?.trim()) &&
+      Boolean(process.env.FIREBASE_PRIVATE_KEY?.trim()));
+  if (!hasFirebase) {
+    const firebaseKeys = Object.keys(process.env).filter((k) => k.startsWith("FIREBASE"));
+    console.error(
+      "[config] Firebase: définir FIREBASE_SERVICE_ACCOUNT_BASE64 (recommandé Railway), ou FIREBASE_SERVICE_ACCOUNT_JSON, ou FIREBASE_PROJECT_ID + FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY"
+    );
+    console.error(
+      "[config] Variables FIREBASE_* vues par le processus:",
+      firebaseKeys.length ? firebaseKeys.join(", ") : "(aucune — vérifie le nom exact: FIREBASE_SERVICE_ACCOUNT_BASE64)"
+    );
     process.exit(1);
   }
 }
@@ -54,13 +61,33 @@ let firebaseReady = false;
 
 function normalizePrivateKey(raw) {
   let key = String(raw ?? "").trim();
+  if (key.charCodeAt(0) === 0xfeff) {
+    key = key.slice(1).trim();
+  }
   if (
     (key.startsWith('"') && key.endsWith('"')) ||
     (key.startsWith("'") && key.endsWith("'"))
   ) {
     key = key.slice(1, -1);
   }
-  return key.replace(/\\n/g, "\n");
+  key = key.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  key = key.replace(/\\r\\n/g, "\n");
+  key = key.replace(/\\n/g, "\n");
+  key = key.replace(/\\\\n/g, "\n");
+  return key.trim();
+}
+
+function parseServiceAccountFromBase64() {
+  const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64?.trim();
+  if (!b64) return null;
+  const raw = Buffer.from(b64, "base64").toString("utf8");
+  return JSON.parse(raw);
+}
+
+function parseServiceAccountFromJson() {
+  const j = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
+  if (!j) return null;
+  return JSON.parse(j);
 }
 
 function initFirebaseAdmin() {
@@ -69,18 +96,48 @@ function initFirebaseAdmin() {
     return;
   }
 
-  const privateKey = normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
-  const looksLikePem =
-    privateKey.includes("BEGIN PRIVATE KEY") ||
-    privateKey.includes("BEGIN RSA PRIVATE KEY");
-  if (!looksLikePem) {
-    console.warn(
-      "[firebase] Clé privée absente ou non-PEM — collez la clé du JSON (private_key) avec \\n à la place des retours à la ligne, ou guillemets doubles autour de la valeur."
-    );
-    return;
+  let serviceAccount = null;
+  try {
+    serviceAccount = parseServiceAccountFromBase64();
+    if (serviceAccount) {
+      console.log("[firebase] Credentials: FIREBASE_SERVICE_ACCOUNT_BASE64");
+    }
+  } catch (e) {
+    console.warn("[firebase] FIREBASE_SERVICE_ACCOUNT_BASE64 invalide:", e.message);
+  }
+
+  if (!serviceAccount) {
+    try {
+      serviceAccount = parseServiceAccountFromJson();
+      if (serviceAccount) {
+        console.log("[firebase] Credentials: FIREBASE_SERVICE_ACCOUNT_JSON");
+      }
+    } catch (e) {
+      console.warn("[firebase] FIREBASE_SERVICE_ACCOUNT_JSON invalide:", e.message);
+    }
   }
 
   try {
+    if (serviceAccount) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+      firebaseReady = true;
+      console.log("[firebase] Admin SDK initialisé — projet:", serviceAccount.project_id);
+      return;
+    }
+
+    const privateKey = normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
+    const looksLikePem =
+      privateKey.includes("BEGIN PRIVATE KEY") ||
+      privateKey.includes("BEGIN RSA PRIVATE KEY");
+    if (!looksLikePem) {
+      console.warn(
+        "[firebase] Clé PEM absente ou illisible — sur Railway préférez FIREBASE_SERVICE_ACCOUNT_BASE64 (fichier JSON encodé en base64)."
+      );
+      return;
+    }
+
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
