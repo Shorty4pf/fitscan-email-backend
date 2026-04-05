@@ -81,12 +81,16 @@ function parseServiceAccountFromBase64() {
   let s = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
   if (!s?.trim()) return null;
   s = s.trim().replace(/^\uFEFF/, "");
+  /** Préfixes parasites souvent collés par erreur (ex. littéral '\n' avant le base64). */
+  s = s.replace(/^['"]\\n['"]\s*/i, "");
+  s = s.replace(/^\\n\s*/, "");
   if (
     (s.startsWith('"') && s.endsWith('"')) ||
     (s.startsWith("'") && s.endsWith("'"))
   ) {
-    s = s.slice(1, -1);
+    s = s.slice(1, -1).trim();
   }
+  s = s.replace(/^['"]\\n['"]\s*/i, "").replace(/^\\n\s*/, "");
 
   /** JSON brut collé par erreur dans la variable nommée BASE64. */
   if (/^\s*\{/.test(s)) {
