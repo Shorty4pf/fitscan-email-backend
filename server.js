@@ -9,13 +9,13 @@ const { sendMagicLinkEmail } = require("./lib/sendMagicLinkEmail");
 const PORT = Number(process.env.PORT) || 3000;
 const FROM_ADDRESS = "FitScan AI <noreply@fitscanai.app>";
 
-/** Paramètres Firebase pour generateSignInWithEmailLink (continue URL + app iOS + domaine des liens). */
 const actionCodeSettings = {
-  url: process.env.FIREBASE_CONTINUE_URL || "https://www.fitscanai.app/universallink",
+  url: "https://www.fitscanai.app/universallink",
   handleCodeInApp: true,
   iOS: {
     bundleId: "com.fitscanai.labs",
   },
+  linkDomain: "fit-scan-ai.firebaseapp.com",
 };
 
 /**
@@ -347,6 +347,7 @@ app.post("/auth/email-link/send", async (req, res) => {
     console.log("[step 4] BEFORE await generateSignInWithEmailLink", {
       timeoutMs: FIREBASE_LINK_TIMEOUT_MS,
       continueUrl: actionCodeSettings.url,
+      linkDomain: actionCodeSettings.linkDomain,
     });
     try {
       const magicLink = await withTimeout(
