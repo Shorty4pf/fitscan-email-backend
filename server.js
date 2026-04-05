@@ -41,13 +41,14 @@ function validateEnv() {
   const hasFirebase =
     Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64?.trim()) ||
     Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim()) ||
+    Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_PATH?.trim()) ||
     (Boolean(process.env.FIREBASE_PROJECT_ID?.trim()) &&
       Boolean(process.env.FIREBASE_CLIENT_EMAIL?.trim()) &&
       Boolean(process.env.FIREBASE_PRIVATE_KEY?.trim()));
   if (!hasFirebase) {
     const firebaseKeys = Object.keys(process.env).filter((k) => k.startsWith("FIREBASE"));
     console.error(
-      "[config] Firebase: définir FIREBASE_SERVICE_ACCOUNT_BASE64 (recommandé Railway), ou FIREBASE_SERVICE_ACCOUNT_JSON, ou FIREBASE_PROJECT_ID + FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY"
+      "[config] Firebase: FIREBASE_SERVICE_ACCOUNT_BASE64 (Railway), ou JSON, ou PATH fichier local, ou PROJECT_ID + CLIENT_EMAIL + PRIVATE_KEY"
     );
     console.error(
       "[config] Variables FIREBASE_* vues par le processus:",
@@ -129,12 +130,26 @@ function parseServiceAccountFromJson() {
   return JSON.parse(j);
 }
 
+function loadServiceAccountFromFile() {
+  const p = process.env.FIREBASE_SERVICE_ACCOUNT_PATH?.trim();
+  if (!p) return null;
+  const fs = require("fs");
+  const path = require("path");
+  const abs = path.isAbsolute(p) ? p : path.join(process.cwd(), p);
+  if (!fs.existsSync(abs)) {
+    throw new Error(`FIREBASE_SERVICE_ACCOUNT_PATH introuvable: ${abs}`);
+  }
+  return JSON.parse(fs.readFileSync(abs, "utf8"));
+}
+
 /** Corrige private_key après JSON (\\n littéraux, CRLF, etc.). */
 function normalizeServiceAccountPrivateKey(sa) {
   if (!sa?.private_key || typeof sa.private_key !== "string") return sa;
   let pk = sa.private_key.trim();
   pk = pk.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-  pk = pk.replace(/\\n/g, "\n");
+  while (pk.includes("\\n")) {
+    pk = pk.replace(/\\n/g, "\n");
+  }
   return { ...sa, private_key: pk };
 }
 
@@ -162,6 +177,17 @@ function initFirebaseAdmin() {
       }
     } catch (e) {
       console.warn("[firebase] FIREBASE_SERVICE_ACCOUNT_JSON invalide:", e.message);
+    }
+  }
+
+  if (!serviceAccount) {
+    try {
+      serviceAccount = loadServiceAccountFromFile();
+      if (serviceAccount) {
+        console.log("[firebase] Credentials: fichier", process.env.FIREBASE_SERVICE_ACCOUNT_PATH?.trim());
+      }
+    } catch (e) {
+      console.warn("[firebase] FIREBASE_SERVICE_ACCOUNT_PATH:", e.message);
     }
   }
 
