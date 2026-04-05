@@ -78,10 +78,45 @@ function normalizePrivateKey(raw) {
 }
 
 function parseServiceAccountFromBase64() {
-  const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64?.trim();
-  if (!b64) return null;
-  const raw = Buffer.from(b64, "base64").toString("utf8");
-  return JSON.parse(raw);
+  let s = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+  if (!s?.trim()) return null;
+  s = s.trim().replace(/^\uFEFF/, "");
+  if (
+    (s.startsWith('"') && s.endsWith('"')) ||
+    (s.startsWith("'") && s.endsWith("'"))
+  ) {
+    s = s.slice(1, -1);
+  }
+
+  /** JSON brut collé par erreur dans la variable nommée BASE64. */
+  if (/^\s*\{/.test(s)) {
+    try {
+      return JSON.parse(s);
+    } catch (_) {
+      /* tenter le décodage base64 ci-dessous */
+    }
+  }
+
+  let b64 = s;
+  const b64Idx = b64.indexOf("base64,");
+  if (b64Idx !== -1) {
+    b64 = b64.slice(b64Idx + "base64,".length);
+  }
+  b64 = b64.replace(/\s/g, "");
+  b64 = b64.replace(/-/g, "+").replace(/_/g, "/");
+  const mod4 = b64.length % 4;
+  if (mod4) {
+    b64 += "=".repeat(4 - mod4);
+  }
+
+  const buf = Buffer.from(b64, "base64");
+  let utf8 = buf.toString("utf8").replace(/^\uFEFF/, "").trim();
+  if (!utf8.startsWith("{")) {
+    throw new Error(
+      "après décodage base64 le contenu ne commence pas par { — régénère avec: base64 -i fichier.json | tr -d '\\n' (une seule ligne, sans guillemets parasites)"
+    );
+  }
+  return JSON.parse(utf8);
 }
 
 function parseServiceAccountFromJson() {
