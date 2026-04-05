@@ -129,6 +129,15 @@ function parseServiceAccountFromJson() {
   return JSON.parse(j);
 }
 
+/** Corrige private_key après JSON (\\n littéraux, CRLF, etc.). */
+function normalizeServiceAccountPrivateKey(sa) {
+  if (!sa?.private_key || typeof sa.private_key !== "string") return sa;
+  let pk = sa.private_key.trim();
+  pk = pk.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  pk = pk.replace(/\\n/g, "\n");
+  return { ...sa, private_key: pk };
+}
+
 function initFirebaseAdmin() {
   if (admin.apps.length > 0) {
     firebaseReady = true;
@@ -158,6 +167,7 @@ function initFirebaseAdmin() {
 
   try {
     if (serviceAccount) {
+      serviceAccount = normalizeServiceAccountPrivateKey(serviceAccount);
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
       });
