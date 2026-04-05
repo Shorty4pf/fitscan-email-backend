@@ -3,8 +3,8 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const admin = require("firebase-admin");
-const { Resend } = require("resend");
 const validator = require("validator");
+const { sendMagicLinkEmail } = require("./lib/sendMagicLinkEmail");
 
 const PORT = Number(process.env.PORT) || 3000;
 const FROM_ADDRESS = "FitScan AI <noreply@fitscanai.app>";
@@ -31,7 +31,7 @@ function loadEmailTemplate() {
   }
 }
 
-const { buildSignInEmailHtml } = loadEmailTemplate();
+const { buildSignInEmailHtml, buildSignInEmailText } = loadEmailTemplate();
 
 const REQUIRED_ENV = [
   "RESEND_API_KEY",
@@ -116,8 +116,6 @@ function withTimeout(promise, ms, label) {
 
 validateEnv();
 initFirebaseAdmin();
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 const app = express();
 
@@ -248,18 +246,22 @@ app.post("/auth/email-link/send", async (req, res) => {
       console.warn("[auth/email-link] unknown AUTH_EMAIL_STAGE, using full:", AUTH_EMAIL_STAGE);
     }
 
-    console.log("[step 6] BEFORE Resend send", { timeoutMs: RESEND_TIMEOUT_MS });
+    console.log("[step 6] BEFORE Resend send (tracking off, raw Firebase href)", {
+      timeoutMs: RESEND_TIMEOUT_MS,
+    });
     let resendResult;
     try {
       resendResult = await withTimeout(
-        resend.emails.send({
+        sendMagicLinkEmail({
+          apiKey: process.env.RESEND_API_KEY,
           from: FROM_ADDRESS,
           to: email,
-          subject: "Your FitScan AI sign-in link",
+          subject: "Sign in to FitScan AI",
           html: buildSignInEmailHtml(signInLink),
+          text: buildSignInEmailText(signInLink),
         }),
         RESEND_TIMEOUT_MS,
-        "Resend emails.send"
+        "Resend magic link send"
       );
     } catch (rsErr) {
       console.error("[step 6] Resend throw", { message: rsErr.message, code: rsErr.code });
