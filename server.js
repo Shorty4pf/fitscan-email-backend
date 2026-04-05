@@ -8,7 +8,16 @@ const { sendMagicLinkEmail } = require("./lib/sendMagicLinkEmail");
 
 const PORT = Number(process.env.PORT) || 3000;
 const FROM_ADDRESS = "FitScan AI <noreply@fitscanai.app>";
-const CONTINUE_URL = "https://fit-scan-ai.firebaseapp.com";
+
+/** Paramètres Firebase pour generateSignInWithEmailLink (continue URL + app iOS + domaine des liens). */
+const actionCodeSettings = {
+  url: process.env.FIREBASE_CONTINUE_URL || "https://fitscanai.com/auth/finish",
+  handleCodeInApp: true,
+  iOS: {
+    bundleId: "com.fitscanai.labs",
+  },
+  linkDomain: "fit-scan-ai.firebaseapp.com",
+};
 
 /**
  * Progressive rollout on Railway (set in Variables):
@@ -338,17 +347,16 @@ app.post("/auth/email-link/send", async (req, res) => {
 
     console.log("[step 4] BEFORE await generateSignInWithEmailLink", {
       timeoutMs: FIREBASE_LINK_TIMEOUT_MS,
+      continueUrl: actionCodeSettings.url,
+      linkDomain: actionCodeSettings.linkDomain,
     });
     try {
-      signInLink = await withTimeout(
-        admin.auth().generateSignInWithEmailLink(email, {
-          url: CONTINUE_URL,
-          handleCodeInApp: true,
-          iOS: { bundleId: "com.fitscanai.labs" },
-        }),
+      const magicLink = await withTimeout(
+        admin.auth().generateSignInWithEmailLink(email, actionCodeSettings),
         FIREBASE_LINK_TIMEOUT_MS,
         "Firebase generateSignInWithEmailLink"
       );
+      signInLink = magicLink;
     } catch (fbErr) {
       console.error("[step 4] Firebase FAILED", {
         message: fbErr.message,
