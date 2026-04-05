@@ -11,7 +11,7 @@ const FROM_ADDRESS = "FitScan AI <noreply@fitscanai.app>";
 
 /** Paramètres Firebase pour generateSignInWithEmailLink (continue URL + app iOS + domaine des liens). */
 const actionCodeSettings = {
-  url: process.env.FIREBASE_CONTINUE_URL || "https://fitscanai.com/auth/finish",
+  url: process.env.FIREBASE_CONTINUE_URL || "https://fitscanai.com/universallink",
   handleCodeInApp: true,
   iOS: {
     bundleId: "com.fitscanai.labs",
