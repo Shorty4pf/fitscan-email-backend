@@ -7,7 +7,7 @@ const validator = require("validator");
 const { sendMagicLinkEmail } = require("./lib/sendMagicLinkEmail");
 
 const PORT = Number(process.env.PORT) || 3000;
-const FROM_ADDRESS = "FitScan AI <noreply@fitscanai.app>";
+const FROM_ADDRESS = "FitScan AI <contact@fitscanai.app>";
 
 /** Paramètres Firebase pour generateSignInWithEmailLink (continue URL + app iOS + domaine des liens). */
 const actionCodeSettings = {
