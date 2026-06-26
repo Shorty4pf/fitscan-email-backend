@@ -1,8 +1,8 @@
 {
-  "name": "fitscan-email-backend",
+  "name": "norax-email-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "Backend FitScan AI — liens de connexion Firebase envoyés via Resend",
+  "description": "Backend NoraX — liens de connexion Firebase envoyés via Resend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

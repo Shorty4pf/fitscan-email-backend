@@ -7,13 +7,13 @@ const validator = require("validator");
 const { sendMagicLinkEmail } = require("./lib/sendMagicLinkEmail");
 
 const PORT = Number(process.env.PORT) || 3000;
-const FROM_ADDRESS = "FitScan AI <noreply@fitscanai.app>";
+const FROM_ADDRESS = "NoraX <noreply@fitscanai.app>";
 
 const actionCodeSettings = {
-  url: "https://www.fitscanai.app/universallink",
+  url: "https://www.norax.app/universallink",
   handleCodeInApp: true,
   iOS: {
-    bundleId: "com.fitscanai.labs",
+    bundleId: "com.norax.app",
   }
 };
 
@@ -274,7 +274,7 @@ app.use(express.json());
 app.get("/", (_req, res) => {
   res.status(200).json({
     ok: true,
-    service: "fitscan-email-backend",
+    service: "norax-email-backend",
     status: "running",
   });
 });
@@ -393,7 +393,7 @@ app.post("/auth/email-link/send", async (req, res) => {
           apiKey: process.env.RESEND_API_KEY,
           from: FROM_ADDRESS,
           to: email,
-          subject: "Sign in to FitScan AI",
+          subject: "Sign in to NoraX",
           html: buildSignInEmailHtml(signInLink),
           text: buildSignInEmailText(signInLink),
         }),
