@@ -7,13 +7,13 @@ const validator = require("validator");
 const { sendMagicLinkEmail } = require("./lib/sendMagicLinkEmail");
 
 const PORT = Number(process.env.PORT) || 3000;
-const FROM_ADDRESS = "NoraX <noreply@fitscanai.app>";
+const FROM_ADDRESS = "NoraX <noreply@noraxai.app>";
 
 const actionCodeSettings = {
-  url: "https://www.norax.app/universallink",
+  url: "https://www.noraxai.app/universallink",
   handleCodeInApp: true,
   iOS: {
-    bundleId: "com.norax.app",
+    bundleId: "com.noraxai.norax",
   }
 };
 
