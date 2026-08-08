@@ -8,7 +8,8 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test:internal": "node scripts/internal-test.js",
-    "verify:credentials": "node scripts/verify-credentials.js"
+    "verify:credentials": "node scripts/verify-credentials.js",
+    "promo:create-all": "node scripts/promo-create-all.js"
   },
   "engines": {
     "node": ">=18"

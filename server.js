@@ -5,6 +5,7 @@ const cors = require("cors");
 const admin = require("firebase-admin");
 const validator = require("validator");
 const { sendMagicLinkEmail } = require("./lib/sendMagicLinkEmail");
+const promoRouter = require("./routes/promo");
 
 const PORT = Number(process.env.PORT) || 3000;
 const FROM_ADDRESS = "NoraX <noreply@noraxai.app>";
@@ -300,6 +301,8 @@ app.get("/health", (_req, res) => {
   res.status(200).json({ ok: true });
 });
 
+app.use("/promo", promoRouter);
+
 app.post("/auth/email-link/send", async (req, res) => {
   const ROUTE_MS =
     Number(process.env.ROUTE_HARD_TIMEOUT_MS) ||
@@ -451,6 +454,8 @@ app.use((_req, res) => {
 const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`[server] Écoute sur 0.0.0.0:${PORT}`);
   console.log("[server] POST /auth/email-link/send");
+  console.log("[server] POST /promo/validate");
+  console.log("[server] POST /promo/redeem");
   console.log("[server] AUTH_EMAIL_STAGE =", AUTH_EMAIL_STAGE);
 });
 
