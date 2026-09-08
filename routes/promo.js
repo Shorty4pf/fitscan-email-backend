@@ -1,6 +1,7 @@
 const express = require("express");
 const admin = require("firebase-admin");
 const { validatePromoCode, redeemPromoCode } = require("../lib/promoService");
+const { isConfigured, resolveOfferId, signPromotionalOffer } = require("../lib/applePromoOffer");
 
 const router = express.Router();
 
@@ -71,6 +72,36 @@ router.post("/redeem", async (req, res) => {
   } catch (err) {
     console.error("[promo/redeem]", err);
     return promoJson(res, 500, { ok: false, error: "internal_error" });
+  }
+});
+
+router.post("/apple-offer-sign", async (req, res) => {
+  try {
+    const productId = typeof req.body?.productId === "string" ? req.body.productId.trim() : "";
+    const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
+    const offerIdRaw = typeof req.body?.offerId === "string" ? req.body.offerId.trim() : "";
+    const offerId = resolveOfferId(code, offerIdRaw);
+    if (!productId || !offerId) {
+      return promoJson(res, 400, { ok: false, error: "missing_offer_params" });
+    }
+
+    if (!isConfigured()) {
+      return promoJson(res, 503, { ok: false, error: "apple_offer_signing_unavailable" });
+    }
+
+    const signed = signPromotionalOffer({
+      productId,
+      offerId,
+      applicationUsername: "",
+    });
+    return promoJson(res, 200, signed);
+  } catch (err) {
+    console.error("[promo/apple-offer-sign]", err);
+    const code = err.code === "apple_offer_signing_unavailable" || err.code === "missing_offer_params"
+      ? err.code
+      : "internal_error";
+    const status = code === "internal_error" ? 500 : 400;
+    return promoJson(res, status, { ok: false, error: code });
   }
 });
 

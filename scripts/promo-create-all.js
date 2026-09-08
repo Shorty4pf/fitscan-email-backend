@@ -12,18 +12,37 @@ const { upsertPromoCode } = require("../lib/promoService");
 
 const DEFAULT_CODES = [
   {
+    code: "NORAXAI",
+    type: "referral",
+    messageKey: "community_welcome",
+    discountPercent: 100,
+    maxRedemptions: null,
+  },
+  {
     code: "FITSCANAI",
     type: "referral",
     messageKey: "community_welcome",
+    discountPercent: 100,
     maxRedemptions: null,
   },
   {
     code: "NORAXVIP",
     type: "vip",
     messageKey: "vip_welcome",
+    discountPercent: 100,
     maxRedemptions: 500,
   },
+  {
+    code: "NORAX20",
+    type: "referral",
+    messageKey: "community_welcome",
+    discountPercent: 20,
+    appleOfferId: "NORAX20",
+    maxRedemptions: null,
+  },
 ];
+
+const CODES_TO_DELETE = ["MATTEO10"];
 
 function initFirebase() {
   if (admin.apps.length) return;
@@ -62,9 +81,14 @@ function initFirebase() {
 
 async function main() {
   initFirebase();
+  const db = admin.firestore();
+  for (const code of CODES_TO_DELETE) {
+    await db.collection("promoCodes").doc(code).delete();
+    console.log("[promo:create-all] SUPPRIMÉ", code);
+  }
   for (const def of DEFAULT_CODES) {
     const saved = await upsertPromoCode(def);
-    console.log("[promo:create-all] OK", saved.code, saved.type);
+    console.log("[promo:create-all] OK", saved.code, saved.type, `${saved.discountPercent}%`);
   }
   console.log("[promo:create-all] Terminé —", DEFAULT_CODES.length, "codes");
 }

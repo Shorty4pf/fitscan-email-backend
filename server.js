@@ -456,6 +456,7 @@ const server = app.listen(PORT, "0.0.0.0", () => {
   console.log("[server] POST /auth/email-link/send");
   console.log("[server] POST /promo/validate");
   console.log("[server] POST /promo/redeem");
+  console.log("[server] POST /promo/apple-offer-sign");
   console.log("[server] AUTH_EMAIL_STAGE =", AUTH_EMAIL_STAGE);
 });
 
