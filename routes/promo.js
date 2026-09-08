@@ -97,10 +97,15 @@ router.post("/apple-offer-sign", async (req, res) => {
     return promoJson(res, 200, signed);
   } catch (err) {
     console.error("[promo/apple-offer-sign]", err);
-    const code = err.code === "apple_offer_signing_unavailable" || err.code === "missing_offer_params"
+    const code = [
+      "apple_offer_signing_unavailable",
+      "missing_offer_params",
+      "apple_offer_key_invalid",
+      "apple_offer_sign_failed",
+    ].includes(err.code)
       ? err.code
       : "internal_error";
-    const status = code === "internal_error" ? 500 : 400;
+    const status = code === "internal_error" ? 500 : code === "missing_offer_params" ? 400 : 503;
     return promoJson(res, status, { ok: false, error: code });
   }
 });

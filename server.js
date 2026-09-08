@@ -457,6 +457,12 @@ const server = app.listen(PORT, "0.0.0.0", () => {
   console.log("[server] POST /promo/validate");
   console.log("[server] POST /promo/redeem");
   console.log("[server] POST /promo/apple-offer-sign");
+  try {
+    const { isConfigured } = require("./lib/applePromoOffer");
+    console.log("[server] Apple offer signing configured =", isConfigured());
+  } catch (err) {
+    console.log("[server] Apple offer signing configured = error");
+  }
   console.log("[server] AUTH_EMAIL_STAGE =", AUTH_EMAIL_STAGE);
 });
 
