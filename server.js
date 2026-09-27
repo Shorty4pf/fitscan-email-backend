@@ -10,7 +10,7 @@ const promoRouter = require("./routes/promo");
 const { deleteUserPromoData } = require("./lib/promoService");
 
 const PORT = Number(process.env.PORT) || 3000;
-const FROM_ADDRESS = "NoraX <noreply@noraxai.app>";
+const FROM_ADDRESS = "NoraX AI <noreply@noraxai.app>";
 
 const actionCodeSettings = {
   url: "https://www.noraxai.app/universallink",
@@ -425,7 +425,7 @@ app.post("/auth/email-link/send", async (req, res) => {
           apiKey: process.env.RESEND_API_KEY,
           from: FROM_ADDRESS,
           to: email,
-          subject: "Sign in to NoraX",
+          subject: "Sign in to NoraX AI",
           html: buildSignInEmailHtml(signInLink),
           text: buildSignInEmailText(signInLink),
         }),
