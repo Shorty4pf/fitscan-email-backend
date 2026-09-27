@@ -5,6 +5,7 @@ const cors = require("cors");
 const admin = require("firebase-admin");
 const validator = require("validator");
 const { sendMagicLinkEmail } = require("./lib/sendMagicLinkEmail");
+const { toUniversalLinkLanding, describeLinkForLog } = require("./lib/universalLink");
 const promoRouter = require("./routes/promo");
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -14,26 +15,13 @@ const actionCodeSettings = {
   url: "https://www.noraxai.app/universallink",
   handleCodeInApp: true,
   iOS: {
-    bundleId: "com.noraxai.norax",
+    bundleId: "app.noraxai.norax",
   }
 };
 
 /** Landing UL servi par Vercel (AASA) — même domaine que actionCodeSettings.url. */
 const UNIVERSAL_LINK_LANDING =
   process.env.MAGIC_LINK_LANDING_URL?.trim() || actionCodeSettings.url;
-
-/**
- * Firebase génère un lien firebaseapp.com/__/auth/action?…
- * Pour ouvrir l’app via AASA, on réécrit vers www.noraxai.app/universallink?… (mêmes query params).
- */
-function toUniversalLinkLanding(firebaseSignInLink) {
-  const src = new URL(String(firebaseSignInLink));
-  const dst = new URL(UNIVERSAL_LINK_LANDING);
-  src.searchParams.forEach((value, key) => {
-    dst.searchParams.set(key, value);
-  });
-  return dst.toString();
-}
 
 /**
  * Progressive rollout on Railway (set in Variables):
@@ -374,9 +362,9 @@ app.post("/auth/email-link/send", async (req, res) => {
         "Firebase generateSignInWithEmailLink"
       );
       signInLink = magicLink;
-      const universalLink = toUniversalLinkLanding(signInLink);
-      console.log("[step 5] Firebase raw link host:", new URL(signInLink).host);
-      console.log("[step 5] Email link (Universal Link landing):", universalLink);
+      const universalLink = toUniversalLinkLanding(signInLink, UNIVERSAL_LINK_LANDING);
+      console.log("[step 5] Firebase raw link:", describeLinkForLog(signInLink));
+      console.log("[step 5] Email universal link:", describeLinkForLog(universalLink));
       signInLink = universalLink;
     } catch (fbErr) {
       console.error("[step 4] Firebase FAILED", {
@@ -464,6 +452,7 @@ const server = app.listen(PORT, "0.0.0.0", () => {
     console.log("[server] Apple offer signing configured = error");
   }
   console.log("[server] AUTH_EMAIL_STAGE =", AUTH_EMAIL_STAGE);
+  console.log("[server] email link iOS bundleId =", actionCodeSettings.iOS.bundleId);
 });
 
 server.on("error", (err) => {
