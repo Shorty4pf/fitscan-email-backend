@@ -7,6 +7,7 @@ const validator = require("validator");
 const { sendMagicLinkEmail } = require("./lib/sendMagicLinkEmail");
 const { toUniversalLinkLanding, describeLinkForLog } = require("./lib/universalLink");
 const promoRouter = require("./routes/promo");
+const { deleteUserPromoData } = require("./lib/promoService");
 
 const PORT = Number(process.env.PORT) || 3000;
 const FROM_ADDRESS = "NoraX <noreply@noraxai.app>";
@@ -290,6 +291,25 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/promo", promoRouter);
+
+app.post("/account/delete", async (req, res) => {
+  try {
+    const header = String(req.headers.authorization || "");
+    const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+    if (!token) {
+      return res.status(401).json({ ok: false, error: "missing_auth" });
+    }
+    const decoded = await admin.auth().verifyIdToken(token);
+    const uid = decoded?.uid;
+    if (!uid) {
+      return res.status(401).json({ ok: false, error: "invalid_auth" });
+    }
+    const summary = await deleteUserPromoData(uid);
+    return res.status(200).json({ ok: true, summary });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e?.message || "delete_failed" });
+  }
+});
 
 app.post("/auth/email-link/send", async (req, res) => {
   const ROUTE_MS =
